@@ -67,7 +67,7 @@ T<-1000 #number of timesteps to simulate
 
 #Set number of realizations to average over
 runs = 1000
-#Set variances that should go into the simulation
+#Set step lengths that should go into the simulation
 varlist <- seq(5, 100, by=5)
 
 #Simulate
