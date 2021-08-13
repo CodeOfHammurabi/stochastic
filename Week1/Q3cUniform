@@ -1,0 +1,93 @@
+#krishna s girish, iiser pune, 11 aug
+#goal: plot alpha vs a for uniform dist [0, a] for jump size a
+#somewhat based on code prepared primarily by Shikhara Bhat for Lab 1 (room 8)
+
+#Make a function to retrieve the MSD given parameters
+get_MSD <- function(a, #upper bound of step length
+                    runs, #Number of realizations to average over
+                    T, #Timesteps for which to run the simulation
+                    animate, #boolean. Do you want an animation of the path?
+                    plot=FALSE){ #boolean. Do you want to plot the path taken once simulation is complete?
+  
+  MSDx <- rep(0,T)
+  MSDy <- rep(0,T)
+  MSD <- rep(0,T)
+  for (run in 1:runs){
+    
+    x<-numeric(T)
+    y<-numeric(T)
+    for (i in 2:T){
+      
+      #WLOG, set origin as starting point
+      x[1]<-0
+      y[1]<-0
+
+      randd <- runif(1,0,a)
+      randt <- runif(1,-pi,pi)
+      #Add that to the current location
+      x[i] <- x[i-1] + randd*cos(randt)
+      y[i] <- y[i-1] + randd*sin(randt)
+    
+      #In case you want individual 1D MSDs
+      MSDx[i] <- MSDx[i] + ((x[i]-x[1])**2)/runs
+      MSDy[i] <- MSDy[i] + ((y[i]-y[1])**2)/runs
+      
+      
+      MSD[i] <- MSD[i] + ((x[i]-x[1])**2)/runs + ((y[i]-y[1])**2)/runs
+      
+      if (animate == 1)
+      {
+        #Visualise line an animation
+        plot(x[1:i],y[1:i], type='o', col='black',lwd=2, pch=16)
+        points(x[1],y[1],pch=22,col="blue",cex=2,lwd=3)
+        points(x[i],y[i],pch=22,col="red",cex=2,lwd=3)
+        
+        #This command is crucial to observe animation
+        Sys.sleep(0.1)
+      }
+    }
+  }
+  
+  if (plot){
+    #Make a plot of the path taken
+    plot(x[1:T],y[1:T], type='o', col='black',lwd=2, pch=16)
+    points(x[1],y[1],pch=22,col="blue",cex=2,lwd=3)
+    points(x[T],y[T],pch=22,col="red",cex=2,lwd=3)
+  }
+  
+  
+  return (MSDx)
+}
+
+#Set parameter values
+
+animate <- FALSE
+
+T<-1000 #number of timesteps to simulate
+
+#Set number of realizations to average over
+runs = 1000
+#Set variances that should go into the simulation
+varlist <- seq(5, 100, by=5)
+
+#Simulate
+
+df <- data.frame(Time=seq(T))
+for (i in 1:length(varlist)){
+  MSD <- get_MSD(varlist[i],runs,T,animate)
+  df <- cbind(df,a=MSD)
+  colnames(df)[i+1] <- as.character(varlist[i]) 
+}
+
+slopelist = numeric(length(varlist))
+for (i in 1:length(varlist)){
+  slope <- lm(log(df[2:1000,i+1])~log(df[2:1000,1]))$coefficients[2]
+  slopelist[i] <- as.numeric(slope)
+}
+slope_df <- data.frame(cbind(varlist,slopelist))
+library(ggplot2)
+slope_plot <- ggplot(slope_df,aes(x=varlist,y=slopelist)) + geom_point()
+slope_plot <- slope_plot + xlab('value of a') + ylab('value of alpha') + theme_light()
+slope_plot <- slope_plot + ylim(0, 2)
+slope_plot <- slope_plot + stat_smooth(method='lm',formula=y~1)
+slope_plot
